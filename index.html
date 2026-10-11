@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FRIENDSHIP QUEST - Petualangan Pulau Persahabatan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --turquoise: #40E0D0;
+            --sky-blue: #87CEEB;
+            --coral-pink: #F88379;
+            --sunshine-yellow: #FFD700;
+            --mint-green: #98FF98;
+            --lavender: #E6E6FA;
+            --white: #FFFFFF;
+            --text-dark: #2C3E50;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* 16:9 Responsive Game Container */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 56.25vw; /* 16:9 aspect ratio */
+            max-height: 100vh;
+            max-width: 177.77vh; /* 16:9 aspect ratio */
+            background: linear-gradient(135deg, var(--sky-blue), var(--turquoise));
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .font-display { font-family: 'Fredoka One', cursive; }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            background-size: cover;
+            background-position: center;
+        }
+        .screen.active { display: flex; }
+
+        .btn-primary {
+            background: linear-gradient(to bottom, #FF8C00, #FF4500);
+            color: white;
+            border: 4px solid white;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: 'Fredoka One', cursive;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #cc3700, 0 15px 20px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .btn-primary:active {
+            transform: translateY(10px);
+            box-shadow: 0 0px 0 #cc3700, 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: var(--mint-green);
+            color: var(--text-dark);
+            border: 3px solid white;
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #6bc46b;
+            transition: all 0.1s;
+        }
+        .btn-secondary:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #6bc46b;
+        }
+
+        /* Animations */
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(2deg); } }
+        @keyframes fly { 0% { transform: translateX(-10vw) translateY(0); } 50% { transform: translateX(50vw) translateY(-50px); } 100% { transform: translateX(110vw) translateY(20px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes pop { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .anim-float { animation: float 4s ease-in-out infinite; }
+        .anim-bounce { animation: bounce 2s ease-in-out infinite; }
+        .anim-pulse { animation: pulse 2s infinite; }
+        .anim-pop { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Clouds */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 100px;
+            box-shadow: inset 0 -5px 15px rgba(0,0,0,0.1);
+        }
+        .cloud::before, .cloud::after {
+            content: ''; position: absolute; background: white; border-radius: 50%;
+        }
+
+        /* Top HUD */
+        #hud {
+            position: absolute;
+            top: 20px; left: 20px; right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .hud-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: 3px solid white;
+            pointer-events: auto;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none; justify-content: center; align-items: center;
+            z-index: 200;
+        }
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 60%;
+            border: 8px solid var(--turquoise);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Specific Screen Styles */
+        .island {
+            width: 120px; height: 120px;
+            background: radial-gradient(circle at 30% 30%, var(--mint-green), #228B22);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 20px 0 #556B2F, inset 0 10px 20px rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center;
+            border: 4px solid rgba(255,255,255,0.3);
+        }
+        .island.locked { filter: grayscale(80%) brightness(0.7); cursor: not-allowed; }
+        .island:hover:not(.locked) { transform: scale(1.1) translateY(-10px); }
+        
+        .piko-mascot {
+            width: 80px; height: 80px;
+            background: var(--mint-green);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.2);
+        }
+        .piko-eye { width: 15px; height: 15px; background: black; border-radius: 50%; position: absolute; top: 25px; }
+        .piko-eye.left { left: 20px; } .piko-eye.right { right: 20px; }
+        .piko-eye::after { content:''; position:absolute; width:5px; height:5px; background:white; border-radius:50%; top:2px; left:2px; }
+        .piko-beak { width: 20px; height: 15px; background: var(--sunshine-yellow); border-radius: 10px; position: absolute; top: 35px; left: 30px; }
+        
+        .interact-card {
+            background: white; border-radius: 20px; padding: 15px;
+            box-shadow: 0 8px 0 #ddd; cursor: pointer; transition: 0.1s;
+            border: 3px solid transparent;
+        }
+        .interact-card:active { transform: translateY(8px); box-shadow: 0 0 0 #ddd; }
+        .interact-card.selected { border-color: var(--turquoise); background: #e0ffff; }
+
+        .drop-zone {
+            border: 4px dashed rgba(255,255,255,0.6);
+            border-radius: 20px; min-height: 150px;
+            display: flex; flex-direction: column; gap: 10px; padding: 15px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .bg-rays {
+            background: repeating-conic-gradient(from 0deg, var(--sunshine-yellow) 0deg 15deg, #FFC125 15deg 30deg);
+            opacity: 0.3; width: 200%; height: 200%; position: absolute;
+            top: -50%; left: -50%; animation: spin 20s linear infinite; z-index: 0;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <!-- Top Navigation / HUD -->
+    <div id="hud" style="display: none;">
+        <button class="btn-secondary" onclick="showScreen('map')">🗺️ Peta</button>
+        <div class="flex gap-4">
+            <div class="hud-item">💎 Kristal: <span id="crystal-count">0</span>/8</div>
+            <div class="hud-item">⭐ Bintang: <span id="star-count">0</span></div>
+        </div>
+    </div>
+
+    <!-- Modal Feedback -->
+    <div id="feedback-modal" class="modal-overlay">
+        <div class="modal-box anim-pop">
+            <div class="flex justify-center mb-4">
+                <div class="piko-mascot anim-bounce" style="width: 100px; height: 100px;">
+                    <div class="piko-eye left" style="top:30px; left:25px;"></div>
+                    <div class="piko-eye right" style="top:30px; right:25px;"></div>
+                    <div class="piko-beak" style="top:45px; left:40px; width:25px;"></div>
+                </div>
+            </div>
+            <h2 id="feedback-title" class="text-3xl font-display text-green-500 mb-2">Hebat!</h2>
+            <p id="feedback-text" class="text-xl mb-6 font-bold text-gray-700"></p>
+            <button class="btn-primary" onclick="closeFeedback()">Lanjut</button>
+        </div>
+    </div>
+
+    <div id="screen-cover" class="screen active" style="background: linear-gradient(180deg, var(--sky-blue) 0%, #E0F6FF 100%); align-items: center; justify-content: center;">
+        <!-- Scenery Background -->
+        <div class="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-blue-400 to-transparent"></div>
+        
+        <!-- Animated Clouds -->
+        <div class="cloud" style="width: 150px; height: 50px; top: 10%; left: -20%; animation: fly 25s linear infinite;"></div>
+        <div class="cloud" style="width: 200px; height: 70px; top: 30%; right: -20%; animation: fly 35s linear infinite reverse;"></div>
+        
+        <!-- Main Island Graphic (CSS) -->
+        <div class="absolute bottom-[-10%] w-[80%] h-[60%] anim-float" style="background: var(--mint-green); border-radius: 50% 50% 0 0; box-shadow: inset 0 20px 0 #7CCD7C;">
+            <!-- Rainbow -->
+            <div style="position:absolute; width:100%; height:200px; border-radius:50%; top:-100px; box-shadow: 0 -20px 0 red, 0 -40px 0 orange, 0 -60px 0 yellow, 0 -80px 0 green, 0 -100px 0 blue, 0 -120px 0 purple; clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); opacity: 0.3;"></div>
+            <!-- Characters Placeholder (Emojis for scale/simplicity in HTML) -->
+            <div class="absolute top-[20%] w-full flex justify-center gap-4 text-6xl">
+                👦🏽 👧🏻 🧑🏼 👦🏿 👧🏽
+            </div>
+        </div>
+
+        <div class="z-10 flex flex-col items-center text-center">
+            <div class="anim-bounce">
+                <h1 class="font-display text-[6vw] text-yellow-300 drop-shadow-[0_8px_8px_rgba(0,0,0,0.5)]" style="-webkit-text-stroke: 3px white;">FRIENDSHIP QUEST</h1>
+                <h2 class="text-3xl font-bold text-white bg-black/30 px-6 py-2 rounded-full mt-2">Petualangan Pulau Persahabatan</h2>
+                <p class="text-xl text-white mt-2 mb-8 font-bold">"Satu Kebaikan, Satu Langkah Menuju Persahabatan!"</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button class="btn-primary anim-pulse" onclick="showScreen('tutorial')">Mulai Petualangan!</button>
+                <button class="btn-secondary" onclick="alert('Gunakan mouse atau sentuh layar untuk memilih dan memindahkan objek!')">Cara Bermain</button>
+            </div>
+        </div>
+        
+        <!-- Mascot Piko flying -->
+        <div class="absolute z-20" style="animation: fly 15s ease-in-out infinite;">
+            <div class="piko-mascot">
+                <div class="piko-eye left"></div><div class="piko-eye right"></div><div class="piko-beak"></div>
+                <!-- Wings -->
+                <div style="position:absolute; width:30px; height:15px; background:white; border-radius:50%; top:40px; left:-15px; animation: pulse 0.2s infinite;"></div>
+                <div style="position:absolute; width:30px; height:15px; background:white; border-radius:50%; top:40px; right:-15px; animation: pulse 0.2s infinite;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-tutorial" class="screen" style="background: var(--lavender); padding: 50px;">
+        <h1 class="font-display text-5xl text-center text-purple-700 mb-8">Training Camp</h1>
+        <div class="flex justify-center items-center h-full gap-8">
+            <div class="piko-mascot anim-float" style="width: 150px; height: 150px;">
+                <div class="piko-eye left" style="top:40px; left:30px;"></div>
+                <div class="piko-eye right" style="top:40px; right:30px;"></div>
+                <div class="piko-beak" style="top:60px; left:60px; width:30px;"></div>
+            </div>
+            
+            <div class="bg-white p-8 rounded-3xl shadow-xl w-1/2">
+                <h2 class="text-2xl font-bold mb-4">Halo Explorer! Aku Piko! 🐦</h2>
+                <p class="text-xl mb-4">Pulau Persahabatan kehilangan cahayanya. Ayo bantu nyalakan 8 Kristal Kebaikan!</p>
+                <div class="bg-gray-100 p-4 rounded-xl mb-6">
+                    <p class="font-bold text-center mb-2">Latihan: Klik bintang, lalu klik kristal abu-abu!</p>
+                    <div class="flex justify-center gap-8 items-center">
+                        <div id="tut-star" class="text-5xl cursor-pointer anim-pulse" onclick="selectTutStar()">⭐</div>
+                        <div class="text-3xl">➡️</div>
+                        <div id="tut-crystal" class="w-16 h-16 bg-gray-400 rounded-lg transform rotate-45 cursor-pointer border-4 border-white shadow-lg" onclick="dropTutStar()"></div>
+                    </div>
+                </div>
+                <button id="btn-ready" class="btn-primary w-full opacity-50 cursor-not-allowed" disabled onclick="showScreen('map'); initGame();">Aku Siap!</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-map" class="screen" style="background: #87CEEB;">
+        <h1 class="font-display text-4xl text-center text-white mt-20 drop-shadow-md">Peta Pulau Persahabatan</h1>
+        <div class="relative w-full h-full" id="map-container">
+            <!-- Path SVG -->
+            <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" z-index="0">
+                <path d="M 20% 30% Q 30% 10% 40% 30% T 60% 30% T 80% 40% T 60% 70% T 40% 60% T 20% 70%" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="8" stroke-dasharray="15,15"/>
+            </svg>
+            
+            <!-- Nodes will be injected via JS -->
+        </div>
+    </div>
+
+    <div id="screen-m1" class="screen" style="background: linear-gradient(to bottom, #a1c4fd, #c2e9fb); padding-top: 80px;">
+        <div class="text-center mb-4">
+            <h1 class="font-display text-4xl text-blue-800">Welcome Village</h1>
+            <p class="text-xl font-bold text-gray-700">Ada anak baru bernama Nara. Ia terlihat sendirian.</p>
+        </div>
+        
+        <div class="flex justify-center items-end h-1/2 gap-10 mb-8 relative">
+            <div class="text-6xl anim-float" style="animation-delay: 0s;">👦🏽👧🏻<br><span class="text-lg font-bold bg-white px-2 rounded">Main Bola</span></div>
+            <!-- Nara -->
+            <div class="text-6xl opacity-80" style="margin-bottom: 20px;">👧🏽❓<br><span class="text-lg font-bold bg-white px-2 rounded text-blue-500">Nara</span></div>
+            <div class="text-6xl anim-float" style="animation-delay: 1s;">🧑🏼👦🏿<br><span class="text-lg font-bold bg-white px-2 rounded">Main Pasir</span></div>
+        </div>
+
+        <div class="flex flex-col items-center bg-white/80 p-6 rounded-t-3xl h-full">
+            <h2 class="text-2xl font-bold mb-4">Apa yang harus kita katakan pada Nara?</h2>
+            <div class="flex gap-4 w-3/4">
+                <div class="interact-card flex-1 text-center" onclick="checkM1('wrong1')">
+                    "Kamu tunggu saja di sana ya."
+                </div>
+                <div class="interact-card flex-1 text-center bg-yellow-100 border-yellow-400 border-2" onclick="checkM1('correct')">
+                    "Hai, namamu siapa? Mau bermain bersama kami?"
+                </div>
+                <div class="interact-card flex-1 text-center" onclick="checkM1('wrong2')">
+                    "Kamu tidak boleh ikut karena kami belum kenal."
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-m2" class="screen" style="background: #e0c3fc; padding-top: 80px;">
+        <div class="text-center mb-2">
+            <h1 class="font-display text-4xl text-purple-800">Rainbow Bridge</h1>
+            <p class="text-xl font-bold text-gray-700">Lio & Sasa berdebat cara menyusun jembatan. Bantu mereka!</p>
+        </div>
+
+        <div class="flex justify-center items-center h-1/3 gap-10">
+            <div class="text-5xl bg-white p-4 rounded-full shadow-lg">👦🏻 Lio</div>
+            <!-- Broken Bridge Graphic -->
+            <div class="w-64 h-20 border-b-8 border-dashed border-white flex gap-2 items-end justify-center" id="m2-bridge">
+                <div class="w-16 h-10 bg-red-400 rounded-t-lg transition-all duration-500 transform translate-y-10 opacity-0" id="m2-p1"></div>
+                <div class="w-16 h-10 bg-yellow-400 rounded-t-lg transition-all duration-500 transform translate-y-10 opacity-0" id="m2-p2"></div>
+                <div class="w-16 h-10 bg-green-400 rounded-t-lg transition-all duration-500 transform translate-y-10 opacity-0" id="m2-p3"></div>
+            </div>
+            <div class="text-5xl bg-white p-4 rounded-full shadow-lg">👧🏻 Sasa</div>
+        </div>
+
+        <div class="flex flex-col items-center bg-white/90 p-6 rounded-3xl mx-10">
+            <h2 class="text-xl font-bold mb-4">Pilih langkah berdiskusi yang benar secara berurutan! (Klik 1, 2, 3)</h2>
+            <div class="grid grid-cols-2 gap-4 w-full max-w-2xl" id="m2-options">
+                <!-- Generated by JS -->
+            </div>
+            <div class="flex gap-2 mt-4" id="m2-slots">
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">1</div>
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">2</div>
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">3</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-m3" class="screen" style="background: linear-gradient(to bottom, #d4fc79, #96e6a1); padding-top: 80px;">
+        <div class="text-center mb-2">
+            <h1 class="font-display text-4xl text-green-800">Kindness Garden</h1>
+            <p class="text-xl font-bold text-gray-700">Bima tidak sengaja menjatuhkan pot. Kelompokkan tindakan di bawah ini!</p>
+        </div>
+
+        <div class="flex justify-center gap-8 mb-4">
+            <div class="text-6xl bg-white p-2 rounded-xl">👦🏽 Bima 😭</div>
+            <div class="text-6xl">🪴💥 (Pot Pecah)</div>
+        </div>
+
+        <div class="flex gap-8 px-10 h-1/2 w-full">
+            <!-- Source items -->
+            <div class="w-1/3 flex flex-col gap-3" id="m3-items">
+                <div class="interact-card text-center font-bold" onclick="selectM3(this, 'good')">Membantu membereskan pot</div>
+                <div class="interact-card text-center font-bold" onclick="selectM3(this, 'bad')">Menertawakan kesalahannya</div>
+                <div class="interact-card text-center font-bold" onclick="selectM3(this, 'good')">Mengajak mencari solusi</div>
+                <div class="interact-card text-center font-bold" onclick="selectM3(this, 'bad')">Menyalahkan terus-menerus</div>
+            </div>
+            
+            <!-- Drop zones -->
+            <div class="w-2/3 flex gap-4">
+                <div class="flex-1 drop-zone bg-green-100 border-green-500 border-solid border-4" onclick="dropM3('good')">
+                    <h3 class="text-xl font-bold text-green-700 text-center">Tindakan Membantu 💖</h3>
+                    <div id="m3-zone-good" class="flex flex-col gap-2"></div>
+                </div>
+                <div class="flex-1 drop-zone bg-red-100 border-red-500 border-solid border-4" onclick="dropM3('bad')">
+                    <h3 class="text-xl font-bold text-red-700 text-center">Membuat Perasaan Buruk ❌</h3>
+                    <div id="m3-zone-bad" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-m4" class="screen" style="background: #ffecd2; padding-top: 80px;">
+        <div class="text-center mb-4">
+            <h1 class="font-display text-4xl text-orange-600">Sharing Station</h1>
+            <p class="text-xl font-bold text-gray-700">Sasa ingin meminjam pensil warna temannya. Susun kalimat yang tepat!</p>
+        </div>
+
+        <div class="flex justify-center items-center gap-10 mb-8">
+            <div class="text-6xl">👧🏻 Sasa</div>
+            <div class="text-6xl bg-white p-4 rounded-3xl shadow-lg border-4 border-orange-300">🎒 ✏️</div>
+            <div class="text-6xl">👦🏽 Teman</div>
+        </div>
+
+        <div class="bg-white/80 p-6 rounded-3xl mx-20 flex flex-col items-center">
+            <div class="flex gap-2 mb-6 min-h-[50px] p-4 bg-orange-100 rounded-xl w-full justify-center items-center border-2 border-dashed border-orange-400" id="m4-sentence">
+                <!-- Dropped words go here -->
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-3" id="m4-words">
+                <button class="btn-secondary" onclick="moveWordM4(this)">Boleh aku</button>
+                <button class="btn-secondary" onclick="moveWordM4(this)">meminjam</button>
+                <button class="btn-secondary" onclick="moveWordM4(this)">pensil warnamu?</button>
+                <button class="btn-secondary" onclick="moveWordM4(this)">Aku akan</button>
+                <button class="btn-secondary" onclick="moveWordM4(this)">menjaganya.</button>
+            </div>
+            <button class="btn-primary mt-6 text-sm" onclick="checkM4()">Cek Kalimat</button>
+        </div>
+    </div>
+
+    <div id="screen-m5" class="screen" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); padding-top: 80px;">
+        <div class="text-center mb-2">
+            <h1 class="font-display text-4xl text-red-600">Brave Heart Playground</h1>
+            <p class="text-xl font-bold text-gray-700">Ada anak yang diejek temannya. Apa yang harus kita lakukan?</p>
+        </div>
+
+        <div class="flex justify-center items-center gap-8 mb-6">
+            <div class="text-5xl text-center bg-white p-2 rounded">😈😈<br><span class="text-sm">Mengejek</span></div>
+            <div id="m5-victim" class="text-6xl bg-red-100 p-4 rounded-full border-4 border-red-400 anim-float cursor-pointer" onclick="alert('Dia merasa sedih dan takut.')">👦🏻 😢</div>
+            <div class="text-5xl text-center bg-blue-100 p-2 rounded cursor-pointer border-4 border-blue-400 hover:scale-110 transition" onclick="selectTeacherM5()">👩🏽‍🏫 Guru<br><span class="text-sm">(Klik untuk lapor)</span></div>
+        </div>
+
+        <div class="bg-white p-6 mx-20 rounded-3xl shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-center">Pilih TINDAKAN AMAN: (Klik 2 tindakan yang benar)</h2>
+            <div class="grid grid-cols-2 gap-4" id="m5-actions">
+                <div class="interact-card text-center font-bold text-lg" onclick="toggleM5(this, true)">Menemani & mendukung anak itu</div>
+                <div class="interact-card text-center font-bold text-lg" onclick="toggleM5(this, false)">Membalas dengan memukul</div>
+                <div class="interact-card text-center font-bold text-lg" onclick="toggleM5(this, false)">Merekam dengan HP</div>
+                <div class="interact-card text-center font-bold text-lg" onclick="toggleM5(this, true)">Lapor kepada Guru/Orang Dewasa</div>
+            </div>
+            <div class="flex justify-center mt-4">
+                <button class="btn-primary text-sm" onclick="checkM5()">Lakukan Tindakan Aman</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-m6" class="screen" style="background: #E6E6FA; padding-top: 80px;">
+        <div class="text-center mb-4">
+            <h1 class="font-display text-4xl text-indigo-700">Learning Lighthouse</h1>
+            <p class="text-xl font-bold text-gray-700">Tomi butuh waktu lebih lama menyusun puzzle. Bagaimana caramu merespons?</p>
+        </div>
+
+        <div class="flex justify-center gap-10 items-center mb-8">
+            <div class="text-5xl text-center">👧🏽👦🏻<br><span class="text-lg bg-green-200 px-2 rounded">Selesai!</span></div>
+            <div class="bg-white p-6 rounded-full shadow-lg border-4 border-indigo-300 relative">
+                <div class="text-6xl">👦🏼 🧩</div>
+                <div class="absolute -top-4 -right-4 bg-indigo-500 text-white font-bold p-2 rounded-full text-xs anim-pulse">Tomi bingung</div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center bg-white/80 p-6 rounded-3xl mx-20">
+            <div class="w-full flex flex-col gap-3">
+                <div class="interact-card text-center font-bold text-lg border-2" onclick="checkM6(false)">"Biar aku saja yang pasang, kamu tidak bisa."</div>
+                <div class="interact-card text-center font-bold text-lg border-2 border-indigo-400 bg-indigo-50" onclick="checkM6(true)">"Ayo kita coba sama-sama pelan-pelan. Kamu pasti bisa."</div>
+                <div class="interact-card text-center font-bold text-lg border-2" onclick="checkM6(false)">"Kamu lambat sekali mainnya."</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-m7" class="screen" style="background: linear-gradient(to top, #74ebd5, #9face6); padding-top: 80px;">
+        <div class="text-center mb-2">
+            <h1 class="font-display text-4xl text-teal-800">Teamwork Treehouse</h1>
+            <p class="text-xl font-bold text-gray-700">Bagi 4 tugas dengan adil kepada 4 anak agar rumah pohon selesai!</p>
+        </div>
+
+        <div class="flex justify-between px-10 h-1/2 gap-4">
+            <!-- Kids -->
+            <div class="flex flex-col justify-around w-1/3">
+                <div class="bg-white p-2 rounded-xl flex items-center gap-4 border-2 border-teal-300">
+                    <span class="text-3xl">👧🏻</span> <div class="drop-zone flex-1 min-h-[50px] p-2 bg-gray-100" data-kid="1"></div>
+                </div>
+                <div class="bg-white p-2 rounded-xl flex items-center gap-4 border-2 border-teal-300">
+                    <span class="text-3xl">👦🏽</span> <div class="drop-zone flex-1 min-h-[50px] p-2 bg-gray-100" data-kid="2"></div>
+                </div>
+                <div class="bg-white p-2 rounded-xl flex items-center gap-4 border-2 border-teal-300">
+                    <span class="text-3xl">🧑🏼</span> <div class="drop-zone flex-1 min-h-[50px] p-2 bg-gray-100" data-kid="3"></div>
+                </div>
+                <div class="bg-white p-2 rounded-xl flex items-center gap-4 border-2 border-teal-300">
+                    <span class="text-3xl">👧🏽</span> <div class="drop-zone flex-1 min-h-[50px] p-2 bg-gray-100" data-kid="4"></div>
+                </div>
+            </div>
+            
+            <!-- Tasks -->
+            <div class="w-1/3 flex flex-col justify-center gap-4">
+                <div class="interact-card text-center bg-yellow-100 font-bold task-card" onclick="selectM7Task(this)">🎨 Menggambar</div>
+                <div class="interact-card text-center bg-yellow-100 font-bold task-card" onclick="selectM7Task(this)">🔨 Menyusun kayu</div>
+                <div class="interact-card text-center bg-yellow-100 font-bold task-card" onclick="selectM7Task(this)">🧹 Bersih-bersih</div>
+                <div class="interact-card text-center bg-yellow-100 font-bold task-card" onclick="selectM7Task(this)">🔎 Memeriksa</div>
+            </div>
+
+            <!-- Treehouse Graphic -->
+            <div class="w-1/3 flex items-end justify-center">
+                <div class="w-48 h-48 bg-teal-700 rounded-t-full relative" id="m7-treehouse" style="opacity: 0.3; transition: 1s;">
+                    <div class="absolute bottom-0 w-8 h-20 bg-brown-600 left-20"></div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4 text-sm text-white font-bold bg-black/30 mx-auto px-4 py-1 rounded-full w-max">
+            Klik tugas, lalu klik kotak kosong di sebelah karakter!
+        </div>
+    </div>
+
+    <div id="screen-m8" class="screen" style="background: #ffd1ff; padding-top: 80px;">
+        <div class="text-center mb-4">
+            <h1 class="font-display text-4xl text-pink-700">Heart-to-Heart Harbor</h1>
+            <p class="text-xl font-bold text-gray-700">Raka kecewa gambarnya robek tidak sengaja. Bantu mereka berdamai.</p>
+        </div>
+
+        <div class="flex justify-center items-center gap-10 mb-6">
+            <div class="text-center">
+                <div class="text-6xl bg-white p-4 rounded-full shadow-lg">👦🏻 😠</div>
+                <div class="font-bold mt-2">Raka (Kecewa)</div>
+            </div>
+            
+            <!-- Broken Heart Puzzle -->
+            <div class="relative w-40 h-40 cursor-pointer" onclick="fixHeartM8()" id="m8-heart-container">
+                <div class="absolute w-20 h-40 bg-red-500 rounded-l-full transform -rotate-45 left-4 top-0" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 0 80%); transition: 1s;" id="m8-h1"></div>
+                <div class="absolute w-20 h-40 bg-red-500 rounded-r-full transform rotate-45 right-4 top-0 translate-x-4 translate-y-4" style="clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%); transition: 1s;" id="m8-h2"></div>
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white text-xs px-2 py-1 rounded-full shadow anim-pulse pointer-events-none" id="m8-hint">Klik untuk satukan</div>
+            </div>
+
+            <div class="text-center">
+                <div class="text-6xl bg-white p-4 rounded-full shadow-lg">👦🏽 😔</div>
+                <div class="font-bold mt-2">Teman (Menyesal)</div>
+            </div>
+        </div>
+
+        <div class="bg-white/80 p-6 rounded-3xl mx-20">
+            <h2 class="text-lg font-bold text-center mb-3">Apa kalimat yang baik untuk meminta maaf?</h2>
+            <div class="flex flex-col gap-2">
+                <div class="interact-card text-center" onclick="checkM8(false)">"Kan aku tidak sengaja, kok kamu marah?"</div>
+                <div class="interact-card text-center border-2 border-pink-400 bg-pink-50" onclick="checkM8(true)">"Maaf aku tidak sengaja merusaknya. Boleh aku bantu perbaiki?"</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-ending" class="screen" style="background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%); align-items: center; justify-content: center; overflow: hidden;">
+        <div class="bg-rays"></div>
+        
+        <!-- Confetti wrapper -->
+        <div id="confetti" class="absolute w-full h-full pointer-events-none z-10"></div>
+
+        <div class="z-20 bg-white/90 p-10 rounded-3xl shadow-2xl text-center max-w-4xl border-8 border-yellow-400 relative">
+            <div class="absolute -top-16 left-1/2 transform -translate-x-1/2">
+                <div class="piko-mascot anim-bounce" style="width: 120px; height: 120px;">
+                    <div class="piko-eye left" style="top:35px; left:25px;"></div>
+                    <div class="piko-eye right" style="top:35px; right:25px;"></div>
+                    <div class="piko-beak" style="top:50px; left:45px; width:30px;"></div>
+                </div>
+            </div>
+            
+            <h1 class="font-display text-5xl text-yellow-500 drop-shadow-md mt-8 mb-2">FRIENDSHIP HERO!</h1>
+            <p class="text-2xl font-bold text-gray-700 mb-6">Pulau Persahabatan kembali bersinar berkat bantuanmu!</p>
+            
+            <div class="bg-blue-50 rounded-2xl p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">Badge yang Kamu Kumpulkan:</h2>
+                <div class="flex flex-wrap justify-center gap-4 text-4xl">
+                    <div class="anim-pop" style="animation-delay: 0.1s">🌟</div>
+                    <div class="anim-pop" style="animation-delay: 0.2s">🤝</div>
+                    <div class="anim-pop" style="animation-delay: 0.3s">🌸</div>
+                    <div class="anim-pop" style="animation-delay: 0.4s">🎒</div>
+                    <div class="anim-pop" style="animation-delay: 0.5s">🛡️</div>
+                    <div class="anim-pop" style="animation-delay: 0.6s">💡</div>
+                    <div class="anim-pop" style="animation-delay: 0.7s">🏆</div>
+                    <div class="anim-pop" style="animation-delay: 0.8s">💖</div>
+                </div>
+            </div>
+            
+            <p class="italic text-gray-600 mb-8 font-bold">"Selalu ingat untuk berbuat baik dan menghargai teman di dunia nyata ya!"</p>
+            
+            <button class="btn-primary" onclick="location.reload()">Main Lagi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let state = {
+        unlockedMissions: 1,
+        crystals: 0,
+        stars: 0,
+        currentScreen: 'cover',
+        missionData: [
+            { id: 1, x: 20, y: 30, color: '#40E0D0', icon: '🛖' },
+            { id: 2, x: 40, y: 30, color: '#8A2BE2', icon: '🌈' },
+            { id: 3, x: 60, y: 30, color: '#32CD32', icon: '🌸' },
+            { id: 4, x: 80, y: 40, color: '#FF8C00', icon: '🎒' },
+            { id: 5, x: 60, y: 70, color: '#DC143C', icon: '🛡️' },
+            { id: 6, x: 40, y: 60, color: '#4169E1', icon: '💡' },
+            { id: 7, x: 20, y: 70, color: '#008080', icon: '🌳' },
+            { id: 8, x: 50, y: 50, color: '#FF1493', icon: '💖' },
+        ]
+    };
+
+    // Navigation System
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${id}`).classList.add('active');
+        state.currentScreen = id;
+        
+        // HUD Management
+        if (id === 'cover' || id === 'tutorial' || id === 'ending') {
+            document.getElementById('hud').style.display = 'none';
+        } else {
+            document.getElementById('hud').style.display = 'flex';
+        }
+
+        if (id === 'map') renderMap();
+        if (id === 'ending') generateConfetti();
+    }
+
+    function initGame() {
+        updateHUD();
+    }
+
+    function updateHUD() {
+        document.getElementById('crystal-count').innerText = state.crystals;
+        document.getElementById('star-count').innerText = state.stars;
+    }
+
+    // Modal System
+    function showFeedback(title, text, isSuccess, nextAction) {
+        const modal = document.getElementById('feedback-modal');
+        const titleEl = document.getElementById('feedback-title');
+        titleEl.innerText = title;
+        titleEl.className = `text-4xl font-display mb-2 ${isSuccess ? 'text-green-500' : 'text-orange-500'}`;
+        document.getElementById('feedback-text').innerText = text;
+        modal.style.display = 'flex';
+        
+        // Sound effect simulation
+        playSound(isSuccess ? 800 : 300, isSuccess ? 'sine' : 'triangle');
+
+        modal.querySelector('button').onclick = () => {
+            modal.style.display = 'none';
+            if (isSuccess) {
+                state.crystals++;
+                state.stars += 10;
+                state.unlockedMissions++;
+                updateHUD();
+                
+                if (state.crystals >= 8) {
+                    showScreen('ending');
+                } else {
+                    showScreen('map');
+                }
+            } else if (nextAction) {
+                nextAction(); // Custom logic on fail
+            }
+        };
+    }
+    
+    function closeFeedback() {
+        document.getElementById('feedback-modal').style.display = 'none';
+    }
+
+    // Simple Synthesizer for Audio Feedback (No external files needed)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        if(type === 'sine') {
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.1);
+        }
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    // Map Rendering
+    function renderMap() {
+        const container = document.getElementById('map-container');
+        // Clear previous nodes
+        container.querySelectorAll('.island').forEach(el => el.remove());
+
+        state.missionData.forEach((m, index) => {
+            const isUnlocked = (index + 1) <= state.unlockedMissions;
+            const isCompleted = (index + 1) < state.unlockedMissions;
+            
+            const node = document.createElement('div');
+            node.className = `island ${isUnlocked ? '' : 'locked'} absolute transform -translate-x-1/2 -translate-y-1/2`;
+            node.style.left = `${m.x}%`;
+            node.style.top = `${m.y}%`;
+            node.style.background = `radial-gradient(circle at 30% 30%, ${m.color}, #333)`;
+            
+            if (isCompleted) {
+                node.innerHTML = `<span class="text-4xl absolute -top-6">💎</span><span class="text-4xl">${m.icon}</span>`;
+            } else if (isUnlocked) {
+                node.innerHTML = `<span class="text-4xl anim-bounce absolute -top-8">👇</span><span class="text-4xl">${m.icon}</span>`;
+                node.onclick = () => showScreen(`m${index + 1}`);
+            } else {
+                node.innerHTML = `<span class="text-4xl">🔒</span>`;
+            }
+            container.appendChild(node);
+        });
+    }
+
+    // --- MISSION LOGIC ---
+
+    // Tutorial
+    let tutStarSelected = false;
+    function selectTutStar() {
+        tutStarSelected = true;
+        document.getElementById('tut-star').classList.add('bg-yellow-200', 'rounded-full');
+    }
+    function dropTutStar() {
+        if (tutStarSelected) {
+            document.getElementById('tut-crystal').style.background = 'var(--turquoise)';
+            document.getElementById('tut-crystal').style.boxShadow = '0 0 20px var(--turquoise)';
+            document.getElementById('tut-star').style.display = 'none';
+            document.getElementById('btn-ready').disabled = false;
+            document.getElementById('btn-ready').classList.remove('opacity-50', 'cursor-not-allowed');
+            playSound(600, 'sine');
+        }
+    }
+
+    // Mission 1 (Welcome)
+    function checkM1(result) {
+        if (result === 'correct') {
+            showFeedback("Bagus Sekali!", "Kamu membuat Nara merasa diterima. Menyapa teman baru membuat persahabatan dimulai!", true);
+        } else {
+            showFeedback("Coba Pikirkan Lagi", "Jika kamu anak baru, apakah kamu ingin disuruh menunggu atau dilarang bermain? Coba sapa dia!", false);
+        }
+    }
+
+    // Mission 2 (Rainbow Bridge)
+    const m2Steps = [
+        { id: 1, text: "Jelaskan ide dengan sopan" },
+        { id: 2, text: "Dengarkan pendapat teman" },
+        { id: 3, text: "Pilih solusi bersama" }
+    ];
+    let m2CurrentStep = 0;
+    const m2CorrectOrder = [2, 1, 3]; // Listen -> Explain -> Solve
+    
+    // Init M2 choices
+    const m2OptionsDiv = document.getElementById('m2-options');
+    m2Steps.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'interact-card text-center font-bold text-sm h-16 flex items-center justify-center';
+        div.innerText = s.text;
+        div.onclick = () => handleM2Select(s.id, div);
+        m2OptionsDiv.appendChild(div);
+    });
+
+    function handleM2Select(id, el) {
+        if (id === m2CorrectOrder[m2CurrentStep]) {
+            el.style.backgroundColor = '#d4edda';
+            el.style.pointerEvents = 'none';
+            document.getElementById('m2-slots').children[m2CurrentStep].innerHTML = '✔️';
+            document.getElementById('m2-slots').children[m2CurrentStep].classList.add('bg-green-400', 'text-white');
+            
+            // Build bridge part
+            document.getElementById(`m2-p${m2CurrentStep+1}`).classList.remove('translate-y-10', 'opacity-0');
+            playSound(500 + (m2CurrentStep*200), 'sine');
+
+            m2CurrentStep++;
+            if (m2CurrentStep === 3) {
+                setTimeout(() => {
+                    showFeedback("Kerja Sama Luar Biasa!", "Perbedaan pendapat itu wajar. Berdiskusi membantu menemukan solusi!", true);
+                }, 1000);
+            }
+        } else {
+            showFeedback("Tunggu Dulu", "Sebelum menjelaskan idemu atau mencari solusi, apa yang harus kamu lakukan pada pendapat temanmu?", false);
+        }
+    }
+
+    // Mission 3 (Garden)
+    let m3Selected = null;
+    let m3Score = 0;
+    function selectM3(el, type) {
+        document.querySelectorAll('#m3-items .interact-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        m3Selected = { element: el, type: type };
+    }
+    function dropM3(zoneType) {
+        if (m3Selected) {
+            if (m3Selected.type === zoneType) {
+                document.getElementById(`m3-zone-${zoneType}`).appendChild(m3Selected.element);
+                m3Selected.element.classList.remove('selected');
+                m3Selected.element.onclick = null;
+                m3Selected.element.style.cursor = 'default';
+                m3Selected = null;
+                m3Score++;
+                playSound(800, 'sine');
+                if (m3Score === 4) {
+                    showFeedback("Hati yang Baik!", "Membantu memperbaiki keadaan jauh lebih baik daripada menyalahkan teman.", true);
+                }
+            } else {
+                showFeedback("Ups, Kurang Tepat", "Coba pikirkan, apakah tindakan itu membantu Bima atau malah membuatnya semakin sedih?", false);
+                m3Selected.element.classList.remove('selected');
+                m3Selected = null;
+            }
+        }
+    }
+
+    // Mission 4 (Sharing)
+    function moveWordM4(btn) {
+        const sentenceBox = document.getElementById('m4-sentence');
+        const wordBox = document.getElementById('m4-words');
+        
+        if (btn.parentElement === wordBox) {
+            sentenceBox.appendChild(btn);
+            btn.classList.replace('btn-secondary', 'bg-orange-500');
+            btn.classList.add('text-white', 'font-bold', 'px-3', 'py-1', 'rounded-lg', 'shadow');
+        } else {
+            wordBox.appendChild(btn);
+            btn.className = 'btn-secondary';
+        }
+    }
+    function checkM4() {
+        const sentence = Array.from(document.getElementById('m4-sentence').children).map(b => b.innerText).join(" ");
+        const correct = "Boleh aku meminjam pensil warnamu? Aku akan menjaganya.";
+        if (sentence === correct) {
+            showFeedback("Sangat Sopan!", "Meminta izin menunjukkan kamu menghargai barang milik orang lain.", true);
+        } else {
+            showFeedback("Belum Tepat", "Coba susun lagi agar menjadi kalimat permintaan izin yang sopan dan janji untuk menjaga barang.", false);
+        }
+    }
+
+    // Mission 5 (Bullying)
+    let m5Selected = [];
+    let m5TeacherNotified = false;
+    function selectTeacherM5() {
+        m5TeacherNotified = true;
+        showFeedback("Tindakan Berani!", "Melaporkan kepada guru adalah cara terbaik menghentikan perundungan. Sekarang, pilih 2 tindakan aman di papan.", false);
+    }
+    function toggleM5(el, isSafe) {
+        if (el.classList.contains('bg-blue-200')) {
+            el.classList.remove('bg-blue-200', 'border-blue-500');
+            m5Selected = m5Selected.filter(i => i.el !== el);
+        } else {
+            if (m5Selected.length < 2) {
+                el.classList.add('bg-blue-200', 'border-blue-500', 'border-2');
+                m5Selected.push({el: el, isSafe: isSafe});
+            }
+        }
+    }
+    function checkM5() {
+        if (m5Selected.length !== 2) {
+            showFeedback("Perhatian", "Pilih tepat 2 tindakan aman.", false);
+            return;
+        }
+        const allSafe = m5Selected.every(item => item.isSafe);
+        if (allSafe && m5TeacherNotified) {
+            showFeedback("Pahlawan Persahabatan!", "Kamu tidak harus menghadapi ini sendirian. Mendukung teman dan meminta bantuan guru adalah langkah terhebat!", true);
+        } else if (allSafe && !m5TeacherNotified) {
+             showFeedback("Hampir Sempurna", "Tindakanmu bagus, tapi kamu lupa melapor pada orang dewasa tepercaya (Klik Guru).", false);
+        } else {
+            showFeedback("Pilihan Berbahaya", "Membalas dengan kekerasan atau merekam kejadian justru akan memperburuk situasi. Cari perlindungan orang dewasa.", false);
+            // Reset
+            m5Selected.forEach(i => i.el.classList.remove('bg-blue-200', 'border-blue-500', 'border-2'));
+            m5Selected = [];
+        }
+    }
+
+    // Mission 6 (Lighthouse)
+    function checkM6(isGood) {
+        if (isGood) {
+            showFeedback("Sangat Empati!", "Setiap orang punya kecepatan belajar berbeda. Memberi dukungan jauh lebih baik daripada mengambil alih tugasnya.", true);
+        } else {
+            showFeedback("Kurang Tepat", "Perkataan itu bisa membuat Tomi semakin tidak percaya diri. Cobalah berikan semangat.", false);
+        }
+    }
+
+    // Mission 7 (Treehouse)
+    let m7ActiveTask = null;
+    let m7Completed = 0;
+    function selectM7Task(el) {
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('ring-4', 'ring-teal-500'));
+        el.classList.add('ring-4', 'ring-teal-500');
+        m7ActiveTask = el;
+    }
+    // Setup drop zones for M7
+    document.querySelectorAll('#screen-m7 .drop-zone').forEach(zone => {
+        zone.onclick = () => {
+            if (m7ActiveTask && zone.children.length === 0) {
+                zone.appendChild(m7ActiveTask);
+                m7ActiveTask.classList.remove('ring-4', 'ring-teal-500');
+                m7ActiveTask.style.fontSize = '0.8rem';
+                m7ActiveTask.style.padding = '5px';
+                m7ActiveTask = null;
+                m7Completed++;
+                playSound(600, 'sine');
+                document.getElementById('m7-treehouse').style.opacity = (0.3 + (m7Completed * 0.2)).toString();
+                
+                if (m7Completed === 4) {
+                    setTimeout(() => {
+                        showFeedback("Kerja Tim Solid!", "Membagi tugas dengan adil memastikan semua orang merasa berharga di dalam kelompok.", true);
+                    }, 500);
+                }
+            }
+        };
+    });
+
+    // Mission 8 (Heart)
+    let m8HeartFixed = false;
+    let m8ApologyChosen = false;
+    function fixHeartM8() {
+        document.getElementById('m8-h1').style.transform = 'rotate(0deg) translate(0,0)';
+        document.getElementById('m8-h2').style.transform = 'rotate(0deg) translate(0,0)';
+        document.getElementById('m8-hint').style.display = 'none';
+        m8HeartFixed = true;
+        playSound(800, 'sine');
+        checkM8Win();
+    }
+    function checkM8(isGood) {
+        if (isGood) {
+            m8ApologyChosen = true;
+            document.querySelectorAll('#screen-m8 .interact-card')[1].classList.add('bg-green-100', 'border-green-400');
+            playSound(600, 'sine');
+            checkM8Win();
+        } else {
+            showFeedback("Hmm...", "Menyalahkan orang yang kecewa tidak akan menyelesaikan masalah. Cobalah bertanggung jawab.", false);
+        }
+    }
+    function checkM8Win() {
+        if (m8HeartFixed && m8ApologyChosen) {
+            setTimeout(() => {
+                showFeedback("Persahabatan Pulih!", "Mengakui kesalahan dan meminta maaf dengan tulus dapat menyatukan kembali hati yang retak.", true);
+            }, 1000);
+        } else if (!m8HeartFixed && m8ApologyChosen) {
+             // Just prompt them to fix heart
+             const hint = document.getElementById('m8-hint');
+             hint.innerText = "Sekarang klik hati untuk menyatukannya!";
+             hint.classList.add('text-lg', 'text-pink-600', 'scale-125');
+        }
+    }
+
+    // Confetti Generator for Final Screen
+    function generateConfetti() {
+        const container = document.getElementById('confetti');
+        container.innerHTML = '';
+        const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d'];
+        for(let i=0; i<100; i++) {
+            const conf = document.createElement('div');
+            conf.className = 'absolute w-3 h-3 rounded-sm';
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.left = Math.random() * 100 + '%';
+            conf.style.top = -10 + '%';
+            conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+            
+            // Custom inline animation via style for each particle
+            const duration = (Math.random() * 3 + 2) + 's';
+            const delay = Math.random() * 2 + 's';
+            conf.style.transition = `top ${duration} cubic-bezier(.37,0,.63,1) ${delay}, transform ${duration} linear ${delay}`;
+            
+            container.appendChild(conf);
+            
+            // Trigger animation
+            setTimeout(() => {
+                conf.style.top = '120%';
+                conf.style.transform = `rotate(${Math.random() * 720}deg)`;
+            }, 50);
+        }
+    }
+
+    // Initialize Game on Load
+    window.onload = () => {
+        // Force specific screen for testing by changing this line, e.g., showScreen('map');
+        // Currently starts at cover.
+    };
+
+</script>
+</body>
+</html>
